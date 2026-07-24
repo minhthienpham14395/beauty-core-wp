@@ -1,2 +1,0 @@
-<?php $config = beautycore_site_config(); ?>
-<section class="cta-section"><div class="cta-bg"><img src="<?php echo esc_url(beautycore_asset_url('/images/cta-bg.jpg')); ?>" alt="" width="1200" height="600" loading="lazy"></div><div class="cta-content"><h2>Sẵn Sàng Cho Khoảng Thời Gian Thư Giãn?</h2><p>Đặt lịch hẹn để được tư vấn về dịch vụ và chọn khung giờ phù hợp với bạn.</p><a href="<?php echo esc_url($config['booking_url']); ?>" class="btn btn-ghost" data-track="booking_click">Đặt lịch hẹn ngay</a></div></section>

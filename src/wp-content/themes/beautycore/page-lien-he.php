@@ -1,0 +1,10 @@
+<?php
+get_header();
+$config = beautycore_site_config();
+?>
+<main class="page-content container"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="<?php echo esc_url(beautycore_home_path()); ?>">Trang chủ</a><span aria-hidden="true">/</span><span>Liên hệ</span></nav><article><header class="page-header"><h1>Liên hệ</h1></header>
+    <section class="prose-section"><h2>Thông tin Beauty Core</h2><p><strong>Địa chỉ:</strong> <a href="<?php echo esc_url($config['google_map_url']); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html($config['address']); ?></a></p><p><strong>Giờ mở cửa:</strong> <?php echo esc_html($config['opening_hours']); ?></p><p><strong>Điện thoại:</strong> <a href="tel:<?php echo esc_attr($config['phone']); ?>"><?php echo esc_html($config['phone_display']); ?></a></p><p><strong>Email:</strong> <a href="mailto:<?php echo esc_attr($config['email']); ?>"><?php echo esc_html($config['email']); ?></a></p></section>
+    <section class="prose-section contact-map-section"><h2>Tìm đường đến Beauty Core</h2><p>Mở bản đồ để xem vị trí và nhận chỉ đường từ vị trí của bạn.</p><div class="contact-map"><iframe src="https://www.google.com/maps?q=<?php echo esc_attr($config['latitude'] . ',' . $config['longitude']); ?>&z=17&output=embed" title="Bản đồ vị trí Beauty Core" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div><a class="btn btn-primary" href="<?php echo esc_url($config['google_map_url']); ?>" target="_blank" rel="noopener noreferrer">Mở Google Maps để chỉ đường</a></section>
+    <section class="prose-section"><h2>Đặt lịch</h2><p>Để chọn dịch vụ và khung giờ, bạn có thể đặt lịch trực tuyến hoặc nhắn tin qua Zalo.</p><p><a class="btn btn-primary" href="<?php echo esc_url(beautycore_booking_section_url()); ?>" data-track="booking_click">Đặt lịch trực tuyến</a></p><p><a href="<?php echo esc_url(beautycore_page_url('cau-hoi-thuong-gap')); ?>">Xem câu hỏi thường gặp về dịch vụ và đặt lịch</a></p></section>
+</article></main>
+<?php get_footer(); ?>

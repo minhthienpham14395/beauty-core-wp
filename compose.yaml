@@ -1,26 +1,33 @@
+name: beauty-core-wp
+
 services:
   db:
     image: mysql:8.0
     restart: unless-stopped
-    command: --default-authentication-plugin=mysql_native_password
+    command: --default-authentication-plugin=mysql_native_password --default-time-zone=+07:00
     environment:
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
       MYSQL_DATABASE: ${WORDPRESS_DB_NAME:-wordpress}
       MYSQL_USER: ${WORDPRESS_DB_USER:-wordpress}
       MYSQL_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wordpress}
-      MYSQL_RANDOM_ROOT_PASSWORD: "1"
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-beautycore_root_local}
     volumes:
       - beautycore_db:/var/lib/mysql
+      - ./seed/database:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u$${MYSQL_USER} -p$${MYSQL_PASSWORD} --silent"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$${MYSQL_USER} -p$${MYSQL_PASSWORD} --silent"]
       interval: 5s
       timeout: 5s
-      retries: 20
+      retries: 30
+      start_period: 20s
 
   wordpress:
     build:
       context: .
       dockerfile: Dockerfile
-    image: beautycore-wordpress:php8.2-apache
+      args:
+        WORDPRESS_TAG: ${WORDPRESS_TAG:-php8.2-apache}
+    image: beautycore-wordpress:${WORDPRESS_TAG:-php8.2-apache}
     restart: unless-stopped
     depends_on:
       db:
@@ -28,21 +35,57 @@ services:
     ports:
       - "${WORDPRESS_PORT:-8081}:80"
     environment:
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
       WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME:-wordpress}
       WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:-wordpress}
       WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wordpress}
-      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME:-wordpress}
-      WORDPRESS_HOME: "http://localhost:${WORDPRESS_PORT:-8081}"
-      WORDPRESS_SITEURL: "http://localhost:${WORDPRESS_PORT:-8081}"
-      WORDPRESS_DEBUG: ${WORDPRESS_DEBUG:-1}
+      WORDPRESS_DEBUG: ${WORDPRESS_DEBUG:-0}
+      WORDPRESS_HOME: ${WP_URL:-http://localhost:8081}
+      WORDPRESS_SITEURL: ${WP_URL:-http://localhost:8081}
+      WP_TIMEZONE: ${WP_TIMEZONE:-Asia/Ho_Chi_Minh}
       BEAUTYCORE_GEMINI_API_KEY: ${BEAUTYCORE_GEMINI_API_KEY:-}
       WORDPRESS_CONFIG_EXTRA: |
-        if (!defined('WP_HOME')) define('WP_HOME', getenv('WORDPRESS_HOME') ?: 'http://localhost:8081');
-        if (!defined('WP_SITEURL')) define('WP_SITEURL', getenv('WORDPRESS_SITEURL') ?: 'http://localhost:8081');
+        define('FS_METHOD', 'direct');
+        define('DISALLOW_FILE_EDIT', true);
+        define('WP_MEMORY_LIMIT', '256M');
         define('BEAUTYCORE_GEMINI_API_KEY', getenv('BEAUTYCORE_GEMINI_API_KEY') ?: '');
     volumes:
       - beautycore_wordpress:/var/www/html
-      - ./:/var/www/html/wp-content/themes/beautycore
+      - ./src/wp-content:/var/www/html/wp-content
+
+  wordpress-init:
+    image: wordpress:cli
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+      wordpress:
+        condition: service_started
+    working_dir: /var/www/html
+    environment:
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME:-wordpress}
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:-wordpress}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wordpress}
+      WORDPRESS_TABLE_PREFIX: ${WORDPRESS_TABLE_PREFIX:-wp_}
+      WP_URL: ${WP_URL:-http://localhost:8081}
+      WP_OLD_URL: ${WP_OLD_URL:-}
+      WORDPRESS_HOME: ${WP_URL:-http://localhost:8081}
+      WORDPRESS_SITEURL: ${WP_URL:-http://localhost:8081}
+      WP_TIMEZONE: ${WP_TIMEZONE:-Asia/Ho_Chi_Minh}
+      WP_SITE_TITLE: ${WP_SITE_TITLE:-Beauty Core}
+      WP_ADMIN_USER: ${WP_ADMIN_USER:-admin}
+      WP_ADMIN_PASSWORD: ${WP_ADMIN_PASSWORD:-change-this-local-password}
+      WP_ADMIN_EMAIL: ${WP_ADMIN_EMAIL:-admin@example.com}
+      WP_THEME: ${WP_THEME:-beautycore}
+      WP_PLUGINS: ${WP_PLUGINS:-}
+    volumes:
+      - beautycore_wordpress:/var/www/html
+      - ./src/wp-content:/var/www/html/wp-content
+      - ./docker/wordpress/init.sh:/scripts/init.sh:ro
+    entrypoint: ["/bin/sh", "/scripts/init.sh"]
 
 volumes:
   beautycore_db:

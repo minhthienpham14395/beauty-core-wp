@@ -4,23 +4,43 @@
 
 ## Cài đặt
 
-1. Chép project này vào `wp-content/themes/beautycore` trong WordPress.
+1. Chép `src/wp-content/themes/beautycore` vào `wp-content/themes/beautycore` trong WordPress.
 2. Kích hoạt theme **Beauty Core** tại `Appearance → Themes`.
 3. Vào `Settings → Permalinks` và bấm **Save Changes** nếu các URL blog chưa hoạt động.
 
 Khi kích hoạt lần đầu, theme tự tạo các trang chính sách, trang giới thiệu/liên hệ/FAQ và import 13 bài viết từ `content/blog` vào Custom Post Type `Bài viết`. Bảng giá và nội dung trang chủ được quản lý bằng code trong `inc/site-data.php`.
 
-## Chạy bằng Docker
+## Chạy bằng Docker và mang sang máy khác
 
-Yêu cầu Docker Desktop đang chạy. Có thể tạo file `.env` từ `.env.example` để đổi port, thông tin database hoặc API key, sau đó chạy:
+Yêu cầu Docker Desktop đang chạy. Toàn bộ theme, plugin, uploads và database seed được đặt trong repository tại `src/wp-content` và `seed/database`, nên một máy mới có thể khởi tạo lại đúng website.
+
+Tạo file môi trường khi cần đổi URL, port hoặc thông tin đăng nhập:
 
 ```bash
-docker compose up -d
+cp .env.example .env
 ```
 
-Sau khi thay đổi `Dockerfile` hoặc cấu hình Apache, chạy `docker compose up -d --build`.
+Sau đó chạy:
 
-Mở `http://localhost:8081`, hoàn tất cài đặt WordPress, kích hoạt theme **Beauty Core**, rồi vào `Settings → Permalinks → Save Changes`.
+```bash
+docker compose up -d --build
+```
+
+Mở `http://localhost:8081`. Container `wordpress-init` tự import database seed khi volume trống, cài WordPress nếu cần, kích hoạt theme **Beauty Core**, cập nhật URL và flush permalink.
+
+Xuất database hiện tại thành seed để chuyển sang máy khác:
+
+```bash
+scripts/export-database.sh
+```
+
+Tạo backup có timestamp:
+
+```bash
+scripts/backup.sh
+```
+
+Database seed có dữ liệu khách hàng, lịch hẹn và tài khoản. Chỉ đưa repository lên nơi lưu trữ private hoặc chuyển bằng kênh bảo mật.
 
 Dừng container nhưng giữ dữ liệu:
 
@@ -36,23 +56,23 @@ docker compose down -v
 
 ## Trợ lý AI
 
-Thêm API key vào `wp-config.php`:
+Thêm API key vào `.env`:
 
-```php
-define('BEAUTYCORE_GEMINI_API_KEY', 'your-api-key');
+```env
+BEAUTYCORE_GEMINI_API_KEY=your-api-key
 ```
 
 Nếu không cấu hình key, các nút liên hệ và đặt lịch vẫn hoạt động; phần trả lời AI sẽ báo chưa được cấu hình.
 
 ## Cấu trúc chính
 
-- `front-page.php`: trang chủ và các section giao diện.
+- `src/wp-content/themes/beautycore/front-page.php`: trang chủ và các section giao diện.
 - `Dockerfile`: image WordPress có bật Apache rewrite để URL `/blog/` hoạt động.
-- `page-*.php`: giới thiệu, dịch vụ, liên hệ và FAQ.
-- `archive-beautycore_blog.php`, `single-beautycore_blog.php`, `taxonomy-beautycore_category.php`: blog và danh mục.
-- `inc/content.php`: Custom Post Type, seed nội dung và render Markdown.
-- `assets/css/site.css`, `assets/js/theme.js`: style và hành vi giao diện.
-- `public/images`, `public/videos`: tài nguyên hình ảnh/video gốc.
+- `src/wp-content/themes/beautycore/page-*.php`: giới thiệu, dịch vụ, liên hệ và FAQ.
+- `src/wp-content/themes/beautycore/inc/`: nghiệp vụ website và wp-admin.
+- `src/wp-content/uploads/`: media do WordPress tạo, được mang sang máy khác.
+- `seed/database/001-wordpress.sql`: dữ liệu WordPress được import khi database volume còn trống.
+- `scripts/`: export/import database và backup/restore.
 
 ## Import nội dung vào wp-admin
 
