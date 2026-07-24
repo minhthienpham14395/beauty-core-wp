@@ -51,6 +51,56 @@
     window.BEAUTYCORE_APPOINTMENT_ADMIN_READY = true;
     document.documentElement.classList.add('beautycore-appointment-js-ready');
 
+    function optionSupports(option, attribute, selectedId) {
+      if (!option || !option.value) {
+        return true;
+      }
+      var raw = option.getAttribute(attribute) || '';
+      if (!raw) {
+        return true;
+      }
+      return raw.split(',').indexOf(String(selectedId || '')) !== -1;
+    }
+
+    function refreshAppointmentAssignments() {
+      var form = modalBody.querySelector('.beautycore-appointment-form');
+      if (!form) {
+        return;
+      }
+      var branch = form.querySelector('#branch_id');
+      var service = form.querySelector('#service_id');
+      var staff = form.querySelector('#staff_id');
+      var branchId = branch ? branch.value : '';
+      var serviceId = service ? service.value : '';
+
+      if (service) {
+        Array.prototype.forEach.call(service.options, function (option) {
+          var unavailable = Boolean(option.value) && (!branchId || !optionSupports(option, 'data-branches', branchId));
+          option.disabled = unavailable;
+          option.hidden = unavailable;
+        });
+        if (service.selectedOptions.length && service.selectedOptions[0].disabled) {
+          service.value = '0';
+          serviceId = '';
+        }
+      }
+
+      if (staff) {
+        Array.prototype.forEach.call(staff.options, function (option) {
+          var unavailable = Boolean(option.value) && (
+            !branchId ||
+            !optionSupports(option, 'data-branches', branchId) ||
+            (serviceId && !optionSupports(option, 'data-services', serviceId))
+          );
+          option.disabled = unavailable;
+          option.hidden = unavailable;
+        });
+        if (staff.selectedOptions.length && staff.selectedOptions[0].disabled) {
+          staff.value = '0';
+        }
+      }
+    }
+
     function editUrl(appointmentId) {
       return 'admin.php?page=beautycore-appointment-edit' + (appointmentId ? '&id=' + appointmentId : '');
     }
@@ -104,6 +154,7 @@
             return;
           }
           modalBody.innerHTML = result.data.data;
+          refreshAppointmentAssignments();
         })
         .catch(function () {
           showFallback(appointmentId, 'Không thể kết nối đến máy chủ.');
@@ -142,7 +193,13 @@
     });
 
     document.addEventListener('change', function (event) {
-      if (!event.target || event.target.id !== 'service_id') {
+      if (!event.target) {
+        return;
+      }
+      if (event.target.id === 'branch_id' || event.target.id === 'service_id') {
+        refreshAppointmentAssignments();
+      }
+      if (event.target.id !== 'service_id') {
         return;
       }
       var option = event.target.options[event.target.selectedIndex];

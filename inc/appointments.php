@@ -112,6 +112,7 @@ function beautycore_appointment_service_options() {
                 'name'     => $service->post_title,
                 'duration' => $duration,
                 'price'    => (float) $price,
+                'branch_ids' => array_values(array_map('strval', (array) get_post_meta($service->ID, '_beautycore_branch_ids', true))),
             );
         }
     }
@@ -380,12 +381,19 @@ function beautycore_create_appointment($data, $source = 'website', $appointment_
         return new WP_Error('beautycore_invalid_email', 'Email khách hàng không hợp lệ.');
     }
 
-    $within_hours = beautycore_appointment_is_within_working_hours($normalized['start'], $normalized['end']);
-    if (is_wp_error($within_hours)) {
-        return $within_hours;
-    }
-    if (beautycore_appointment_staff_is_unavailable($normalized['staff_id'], $normalized['date'])) {
-        return new WP_Error('beautycore_staff_unavailable', 'Nhân viên đã đăng ký nghỉ trong ngày này.');
+    if (function_exists('beautycore_stage4_validate_appointment_resources')) {
+        $resource_validation = beautycore_stage4_validate_appointment_resources($normalized);
+        if (is_wp_error($resource_validation)) {
+            return $resource_validation;
+        }
+    } else {
+        $within_hours = beautycore_appointment_is_within_working_hours($normalized['start'], $normalized['end']);
+        if (is_wp_error($within_hours)) {
+            return $within_hours;
+        }
+        if (beautycore_appointment_staff_is_unavailable($normalized['staff_id'], $normalized['date'])) {
+            return new WP_Error('beautycore_staff_unavailable', 'Nhân viên đã đăng ký nghỉ trong ngày này.');
+        }
     }
     if (in_array($normalized['status'], beautycore_appointment_active_statuses(), true)) {
         $conflict = beautycore_appointment_conflict($normalized['start'], $normalized['end'], $normalized['staff_id'], $normalized['branch_id'], $appointment_id);
@@ -850,16 +858,19 @@ function beautycore_render_appointment_edit_page($appointment_id_override = null
     echo '</datalist></div></div><div class="beautycore-form-grid"><div class="beautycore-form-field"><label for="customer_email"><strong>Email</strong></label><input id="customer_email" type="email" name="customer_email" value="' . esc_attr(isset($appointment['customer_email']) ? $appointment['customer_email'] : '') . '"></div><div class="beautycore-form-field"><label for="source"><strong>Nguồn lịch</strong></label><select id="source" name="source"><option value="frontdesk" ' . selected($source, 'frontdesk', false) . '>Tại quầy</option><option value="website" ' . selected($source, 'website', false) . '>Website</option><option value="phone" ' . selected($source, 'phone', false) . '>Điện thoại</option></select></div></div></section>';
     echo '<section class="beautycore-panel"><h2>Thời gian và phân công</h2><div class="beautycore-form-grid"><div class="beautycore-form-field"><label for="appointment_date"><strong>Ngày *</strong></label><input id="appointment_date" type="date" name="date" required value="' . esc_attr(substr($start, 0, 10)) . '"></div><div class="beautycore-form-field"><label for="start_time"><strong>Bắt đầu *</strong></label><input id="start_time" type="time" name="start_time" required value="' . esc_attr(substr($start, 11, 5)) . '"></div><div class="beautycore-form-field"><label for="end_time"><strong>Kết thúc</strong></label><input id="end_time" type="time" name="end_time" value="' . esc_attr(isset($appointment['end']) ? substr($appointment['end'], 11, 5) : '') . '"><p class="description">Để trống để tự tính theo thời lượng dịch vụ.</p></div><div class="beautycore-form-field"><label for="duration"><strong>Thời lượng (phút) *</strong></label><input id="duration" type="number" min="1" name="duration" required value="' . esc_attr(isset($appointment['duration']) ? $appointment['duration'] : '') . '"></div></div><div class="beautycore-form-grid"><div class="beautycore-form-field"><label for="staff_id"><strong>Nhân viên</strong></label><select id="staff_id" name="staff_id"><option value="0">Chưa phân công</option>';
     foreach ($staff as $key => $label) {
-        echo '<option value="' . esc_attr($key) . '" ' . selected((int) (isset($appointment['staff_id']) ? $appointment['staff_id'] : 0), (int) $key, false) . '>' . esc_html($label) . '</option>';
+        $staff_data = function_exists('beautycore_staff_data') ? beautycore_staff_data(absint($key)) : array();
+        $staff_branches = !empty($staff_data['branch_ids']) ? implode(',', array_map('absint', $staff_data['branch_ids'])) : '';
+        $staff_services = !empty($staff_data['service_ids']) ? implode(',', array_map('absint', $staff_data['service_ids'])) : '';
+        echo '<option value="' . esc_attr($key) . '" data-branches="' . esc_attr($staff_branches) . '" data-services="' . esc_attr($staff_services) . '" ' . selected((int) (isset($appointment['staff_id']) ? $appointment['staff_id'] : 0), (int) $key, false) . '>' . esc_html($label) . '</option>';
     }
-    echo '</select></div><div class="beautycore-form-field"><label for="branch_id"><strong>Chi nhánh</strong></label><select id="branch_id" name="branch_id"><option value="">Chưa chọn</option>';
+    echo '</select></div><div class="beautycore-form-field"><label for="branch_id"><strong>Chi nhánh *</strong></label><select id="branch_id" name="branch_id" required><option value="">Chưa chọn</option>';
     foreach ($branches as $key => $label) {
         echo '<option value="' . esc_attr($key) . '" ' . selected((string) (isset($appointment['branch_id']) ? $appointment['branch_id'] : ''), (string) $key, false) . '>' . esc_html($label) . '</option>';
     }
     echo '</select></div></div></section>';
     echo '<section class="beautycore-panel"><h2>Dịch vụ và ghi chú</h2><div class="beautycore-form-grid"><div class="beautycore-form-field"><label for="service_id"><strong>Dịch vụ *</strong></label><select id="service_id" name="service_id" required><option value="0">Chọn dịch vụ</option>';
     foreach ($services as $key => $service) {
-        echo '<option value="' . esc_attr($key) . '" data-duration="' . esc_attr($service['duration']) . '" data-price="' . esc_attr($service['price']) . '" ' . selected((int) (isset($appointment['service_id']) ? $appointment['service_id'] : 0), (int) $key, false) . '>' . esc_html($service['name']) . '</option>';
+        echo '<option value="' . esc_attr($key) . '" data-duration="' . esc_attr($service['duration']) . '" data-price="' . esc_attr($service['price']) . '" data-branches="' . esc_attr(implode(',', isset($service['branch_ids']) ? $service['branch_ids'] : array())) . '" ' . selected((int) (isset($appointment['service_id']) ? $appointment['service_id'] : 0), (int) $key, false) . '>' . esc_html($service['name']) . '</option>';
     }
     echo '</select></div><div class="beautycore-form-field"><label for="price"><strong>Giá</strong></label><input id="price" type="number" min="0" step="1000" name="price" value="' . esc_attr(isset($appointment['price']) ? $appointment['price'] : '') . '"></div></div><div class="beautycore-form-field"><label for="notes"><strong>Ghi chú</strong></label><textarea id="notes" name="notes" rows="4">' . esc_textarea(isset($appointment['notes']) ? $appointment['notes'] : '') . '</textarea></div></section></div>';
     echo '<aside><section class="beautycore-panel"><h2>Trạng thái</h2><select class="beautycore-appointment-status-select" name="status">';
@@ -1005,15 +1016,20 @@ function beautycore_public_booking_shortcode() {
     if (!empty($_GET['booking_error'])) {
         echo '<div class="notice notice-error"><p>' . esc_html(wp_unslash($_GET['booking_error'])) . '</p></div>';
     }
-    echo '<form class="beautycore-booking-form" method="post" action="' . esc_url(beautycore_appointment_relative_url(admin_url('admin-post.php'))) . '"><input type="hidden" name="action" value="beautycore_public_create_appointment">';
+    echo '<form class="beautycore-booking-form" data-beautycore-booking-form method="post" action="' . esc_url(beautycore_appointment_relative_url(admin_url('admin-post.php'))) . '"><input type="hidden" name="action" value="beautycore_public_create_appointment">';
     wp_nonce_field('beautycore_public_create_appointment');
-    echo '<p><label>Họ tên *<input required name="customer_name"></label></p><p><label>Số điện thoại *<input required name="customer_phone"></label></p><p><label>Email<input type="email" name="customer_email"></label></p><p><label>Dịch vụ *<select required name="service_id"><option value="0">Chọn dịch vụ</option>';
-    foreach ($services as $key => $service) {
-        echo '<option value="' . esc_attr($key) . '">' . esc_html($service['name']) . '</option>';
-    }
-    echo '</select></label></p><p><label>Chi nhánh<select name="branch_id"><option value="">Chọn chi nhánh</option>';
+    echo '<p><label>Họ tên *<input required name="customer_name"></label></p><p><label>Số điện thoại *<input required name="customer_phone"></label></p><p><label>Email<input type="email" name="customer_email"></label></p><p><label>Chi nhánh *<select required name="branch_id"><option value="">Chọn chi nhánh</option>';
     foreach ($branches as $key => $label) {
         echo '<option value="' . esc_attr($key) . '">' . esc_html($label) . '</option>';
+    }
+    echo '</select></label></p><p><label>Dịch vụ *<select required name="service_id"><option value="0">Chọn dịch vụ</option>';
+    foreach ($services as $key => $service) {
+        $service_post = get_post(absint($key));
+        $booking_enabled = get_post_meta(absint($key), '_beautycore_booking_enabled', true) !== '0';
+        if (!$service_post || $service_post->post_status !== 'publish' || !$booking_enabled) {
+            continue;
+        }
+        echo '<option value="' . esc_attr($key) . '" data-branches="' . esc_attr(implode(',', isset($service['branch_ids']) ? $service['branch_ids'] : array())) . '">' . esc_html($service['name']) . '</option>';
     }
     echo '</select></label></p><div><label>Ngày *<input required type="date" name="date" min="' . esc_attr(current_time('Y-m-d')) . '"></label> <label>Giờ bắt đầu *<input required type="time" name="start_time"></label></div><p><label>Ghi chú<textarea name="notes" rows="3"></textarea></label></p><p><button type="submit">Gửi yêu cầu đặt lịch</button></p></form>';
     return ob_get_clean();

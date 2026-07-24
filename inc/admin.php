@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('BEAUTYCORE_ADMIN_VERSION', '1.3.11');
+define('BEAUTYCORE_ADMIN_VERSION', '1.4.0');
 
 function beautycore_admin_role_labels() {
     return array(
@@ -38,6 +38,9 @@ function beautycore_admin_role_capabilities() {
         'view_beautycore_services'     => true,
         'manage_beautycore_services'   => true,
         'manage_beautycore_pricing'    => true,
+        'view_beautycore_branches'     => true,
+        'manage_beautycore_staff'      => true,
+        'manage_beautycore_branches'   => true,
         'view_beautycore_schedule'     => true,
         'manage_beautycore_appointments'=> true,
         'view_beautycore_reports'       => true,
@@ -630,12 +633,18 @@ function beautycore_render_reports_page() {
     $blog_count = wp_count_posts('beautycore_blog');
     $page_count = wp_count_posts('page');
     $media_count = wp_count_attachments();
+    $media_total = 0;
+    foreach ((array) $media_count as $count) {
+        if (is_numeric($count)) {
+            $media_total += (int) $count;
+        }
+    }
 
     echo '<div class="beautycore-stat-grid">';
     beautycore_admin_stat_card('Lịch hôm nay', $metrics['today']);
     beautycore_admin_stat_card('Lịch pending', $metrics['pending']);
     beautycore_admin_stat_card('Bài viết', $blog_count ? (int) $blog_count->publish : 0);
-    beautycore_admin_stat_card('Media', $media_count ? (int) $media_count->total : 0);
+    beautycore_admin_stat_card('Media', $media_total);
     echo '</div>';
     echo '<div class="beautycore-panel"><h2>Tóm tắt dữ liệu</h2><p>Đây là lớp báo cáo nền. Các báo cáo doanh thu, tỷ lệ lấp đầy và hiệu suất nhân viên sẽ được nối vào dữ liệu lịch hẹn ở các giai đoạn tiếp theo.</p>';
     echo '<ul class="beautycore-report-list"><li>Trang đã xuất bản: <strong>' . esc_html($page_count ? $page_count->publish : 0) . '</strong></li><li>Khách sắp đến: <strong>' . esc_html($metrics['upcoming']) . '</strong></li></ul></div>';
@@ -712,6 +721,10 @@ function beautycore_render_module_page() {
         }
     } elseif ($slug === 'beautycore-services') {
         beautycore_render_services_page();
+    } elseif ($slug === 'beautycore-staff' && function_exists('beautycore_render_staff_admin_page')) {
+        beautycore_render_staff_admin_page();
+    } elseif ($slug === 'beautycore-branches' && function_exists('beautycore_render_branches_admin_page')) {
+        beautycore_render_branches_admin_page();
     } elseif ($slug === 'beautycore-reports') {
         beautycore_render_reports_page();
     } elseif ($slug === 'beautycore-settings') {

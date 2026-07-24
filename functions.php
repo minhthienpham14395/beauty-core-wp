@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('BEAUTYCORE_VERSION', '1.0.2');
+define('BEAUTYCORE_VERSION', '1.1.0');
 define('BEAUTYCORE_CONTENT_VERSION', '2.0.0');
 define('BEAUTYCORE_THEME_DIR', get_template_directory());
 
@@ -20,6 +20,8 @@ require_once BEAUTYCORE_THEME_DIR . '/inc/seo.php';
 require_once BEAUTYCORE_THEME_DIR . '/inc/appointments.php';
 require_once BEAUTYCORE_THEME_DIR . '/inc/admin.php';
 require_once BEAUTYCORE_THEME_DIR . '/inc/service-admin.php';
+require_once BEAUTYCORE_THEME_DIR . '/inc/staff-branch.php';
+require_once BEAUTYCORE_THEME_DIR . '/inc/staff-branch-admin.php';
 
 function beautycore_setup() {
     load_theme_textdomain('beautycore', BEAUTYCORE_THEME_DIR . '/languages');

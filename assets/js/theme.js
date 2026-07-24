@@ -29,6 +29,27 @@
     }),
   );
 
+  document.querySelectorAll("[data-beautycore-booking-form]").forEach((form) => {
+    const branch = form.querySelector('[name="branch_id"]');
+    const service = form.querySelector('[name="service_id"]');
+    if (!branch || !service) return;
+
+    const refreshServices = () => {
+      const branchId = branch.value;
+      [...service.options].forEach((option) => {
+        if (!option.value || option.value === "0") return;
+        const branchIds = (option.dataset.branches || "").split(",").filter(Boolean);
+        const unavailable = !branchId || (branchIds.length > 0 && !branchIds.includes(branchId));
+        option.disabled = unavailable;
+        option.hidden = unavailable;
+      });
+      if (service.selectedOptions[0]?.disabled) service.value = "0";
+    };
+
+    branch.addEventListener("change", refreshServices);
+    refreshServices();
+  });
+
   if ("IntersectionObserver" in window) {
     const observer = new IntersectionObserver(
       (entries) =>
