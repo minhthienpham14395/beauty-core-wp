@@ -1,0 +1,15 @@
+---
+import { siteConfig } from "../../data/site";
+type Props = { author: string };
+const { author } = Astro.props;
+---
+
+<aside class="author-box">
+  <img src="/images/logo.jpg" alt="Logo Cô Năm Spa" width="1000" height="1000" loading="lazy" /><div
+  >
+    <p class="author-box__label">Nội dung được biên soạn và rà soát bởi</p><h2>{author}</h2><p>
+      Thông tin được cập nhật theo dịch vụ tại {siteConfig.name} và chỉ nhằm mục đích tham khảo, không
+      thay thế tư vấn y khoa.
+    </p><a href="/chinh-sach-bien-soan-noi-dung/">Xem chính sách biên soạn nội dung</a>
+  </div>
+</aside>

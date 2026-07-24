@@ -1,0 +1,44 @@
+---
+import PageLayout from "../layouts/PageLayout.astro";
+import { siteConfig } from "../data/site";
+---
+
+<PageLayout
+  title="Liên hệ"
+  description="Thông tin liên hệ, giờ mở cửa và chỉ đường đến Cô Năm Spa."
+>
+  <section class="prose-section">
+    <h2>Thông tin Cô Năm Spa</h2><p>
+      <strong>Địa chỉ:</strong>
+      <a href={siteConfig.googleMapUrl} target="_blank" rel="noopener noreferrer"
+        >{siteConfig.address}</a
+      >
+    </p><p><strong>Giờ mở cửa:</strong> {siteConfig.openingHours}</p><p>
+      <strong>Điện thoại:</strong>
+      <a href={`tel:${siteConfig.phone}`}>{siteConfig.phoneDisplay}</a>
+    </p><p><strong>Email:</strong> <a href={`mailto:${siteConfig.email}`}>{siteConfig.email}</a></p>
+  </section>
+  <section class="prose-section contact-map-section">
+    <h2>Tìm đường đến Cô Năm Spa</h2><p>
+      Mở bản đồ để xem vị trí và nhận chỉ đường từ vị trí của bạn.
+    </p><div class="contact-map">
+      <iframe
+        src={`https://www.google.com/maps?q=${siteConfig.latitude},${siteConfig.longitude}&z=17&output=embed`}
+        title="Bản đồ vị trí Cô Năm Spa"
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </div><a
+      class="btn btn-primary"
+      href={siteConfig.googleMapUrl}
+      target="_blank"
+      rel="noopener noreferrer">Mở Google Maps để chỉ đường</a
+    >
+  </section>
+  <section class="prose-section">
+    <h2>Đặt lịch</h2><p>
+      Để chọn dịch vụ và khung giờ, bạn có thể đặt lịch trực tuyến hoặc nhắn tin qua Zalo.
+    </p><p><a class="btn btn-primary" href={siteConfig.bookingUrl}>Đặt lịch trực tuyến</a></p><p>
+      <a href="/cau-hoi-thuong-gap/">Xem câu hỏi thường gặp về dịch vụ và đặt lịch</a>
+    </p>
+  </section>
+</PageLayout>

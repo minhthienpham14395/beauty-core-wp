@@ -1,0 +1,19 @@
+---
+type Faq = { question: string; answer: string };
+type Props = { faqs: Faq[] };
+const { faqs } = Astro.props;
+---
+
+{
+  faqs.length > 0 && (
+    <section class="article-faq">
+      <h2>Câu hỏi thường gặp</h2>
+      {faqs.map((faq) => (
+        <details>
+          <summary>{faq.question}</summary>
+          <p>{faq.answer}</p>
+        </details>
+      ))}
+    </section>
+  )
+}

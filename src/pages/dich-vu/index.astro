@@ -1,0 +1,22 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ServicesSection from "../../components/home/ServicesSection.astro";
+---
+
+<BaseLayout
+  title="Dịch vụ gội đầu thư giãn và massage | Cô Năm Spa"
+  description="Xem bảng giá gội đầu thư giãn, massage cổ vai gáy, massage toàn thân và các combo tại Cô Năm Spa."
+>
+  <main class="service-page">
+    <div class="service-page__intro container">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="/">Trang chủ</a><span aria-hidden="true">/</span><span>Dịch vụ</span>
+      </nav><p class="section-label">Dịch vụ Cô Năm Spa</p><h1>
+        Chăm sóc và thư giãn theo thời gian của bạn
+      </h1><p>
+        Tham khảo các gói gội đầu, massage và combo. Vui lòng liên hệ để xác nhận khung giờ, quy
+        trình và mức giá trước khi đặt lịch.
+      </p>
+    </div><ServicesSection />
+  </main>
+</BaseLayout>

@@ -1,0 +1,49 @@
+---
+import { mainNavigation } from "../../data/navigation";
+import { siteConfig } from "../../data/site";
+const isHome = Astro.url.pathname === "/";
+const currentPath = Astro.url.pathname;
+---
+
+<header class:list={["site-header", { "hero-mode": isHome, scrolled: !isHome }]} id="site-header">
+  <div class="header-inner">
+    <a href="/" class="site-logo" aria-label="Cô Năm Spa - Trang chủ"
+      ><img src="/images/logo.jpg" alt="Cô Năm - Tiệm Gội Đầu Thư Giãn" /></a
+    >
+    <nav class="main-nav" id="main-nav" aria-label="Điều hướng chính">
+      <ul class="nav-menu">
+        {
+          mainNavigation.map((item) => {
+            const isCurrent =
+              item.href === "/" ? currentPath === "/" : currentPath.startsWith(item.href);
+            return (
+              <li>
+                <a
+                  href={item.href}
+                  aria-current={isCurrent ? "page" : undefined}
+                  class:list={{ active: isCurrent }}
+                >
+                  {item.label}
+                </a>
+              </li>
+            );
+          })
+        }
+      </ul>
+      <a href={siteConfig.bookingUrl} class="btn btn-primary nav-cta" data-track="booking_click"
+        >Đặt lịch ngay</a
+      >
+    </nav>
+    <button
+      class="mobile-menu-toggle"
+      id="mobile-toggle"
+      aria-expanded="false"
+      aria-controls="main-nav"
+      aria-label="Mở menu"><span></span><span></span><span></span></button
+    >
+  </div>
+</header>
+
+<script>
+  import "../../scripts/header";
+</script>

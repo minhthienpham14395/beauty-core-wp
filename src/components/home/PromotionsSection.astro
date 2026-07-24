@@ -1,0 +1,63 @@
+---
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
+import { siteConfig } from "../../data/site";
+
+const promotionDirectory = join(process.cwd(), "public", "images", "uudai");
+const promotionDetails: Record<string, { price: number; alt: string }> = {
+  "6d6428eb-7780-4b0f-aadd-87dad04f2bcf.jpg": {
+    price: 169_000,
+    alt: "Ưu đãi gội đầu thư giãn 50 phút – 169.000đ",
+  },
+  "8bc58f23-31c4-45db-be08-44a40984c124.jpg": {
+    price: 189_000,
+    alt: "Ưu đãi gội đầu chuyên sâu 60 phút – 189.000đ",
+  },
+  "6cbcd60b-ecbf-4710-bf28-8b0b3a5e17bb.jpg": {
+    price: 339_000,
+    alt: "Ưu đãi combo gội đầu và massage tay chân – 339.000đ",
+  },
+  "ccfc2a28-5017-4d8b-9508-56897ebcd695.jpg": {
+    price: 389_000,
+    alt: "Ưu đãi combo massage body và gội đầu – 389.000đ",
+  },
+};
+const promotions = readdirSync(promotionDirectory)
+  .filter((file) => /\.(avif|jpe?g|png|webp)$/i.test(file))
+  .sort((first, second) => {
+    const firstPrice = promotionDetails[first]?.price ?? Number.MAX_SAFE_INTEGER;
+    const secondPrice = promotionDetails[second]?.price ?? Number.MAX_SAFE_INTEGER;
+    return firstPrice - secondPrice || first.localeCompare(second);
+  })
+  .map((file, index) => ({
+    src: `/images/uudai/${file}`,
+    alt: promotionDetails[file]?.alt ?? `Ưu đãi dịch vụ Cô Năm Spa ${index + 1}`,
+  }));
+---
+
+<section class="promotions-section" id="uu-dai">
+  <div class="container">
+    <header class="promotions-header fade-in">
+      <span class="section-label">Chương Trình Đặc Biệt</span><h2 class="section-title">
+        Ưu Đãi Tại Cô Năm Spa
+      </h2><p class="section-desc">
+        Khám phá các liệu trình đang có mức giá ưu đãi và đặt lịch để giữ khung giờ phù hợp.
+      </p>
+    </header><div class="promotions-grid">
+      {
+        promotions.map((promotion) => (
+          <a
+            href={siteConfig.bookingUrl}
+            class="promotion-card fade-in"
+            aria-label={`${promotion.alt} - Đặt lịch ngay`}
+          >
+            <>
+              <img src={promotion.src} alt={promotion.alt} loading="lazy" />
+              <span>Đặt lịch ngay</span>
+            </>
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</section>
