@@ -26,15 +26,19 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "${WORDPRESS_PORT:-8080}:80"
+      - "${WORDPRESS_PORT:-8081}:80"
     environment:
       WORDPRESS_DB_HOST: db:3306
       WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:-wordpress}
       WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wordpress}
       WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME:-wordpress}
+      WORDPRESS_HOME: "http://localhost:${WORDPRESS_PORT:-8081}"
+      WORDPRESS_SITEURL: "http://localhost:${WORDPRESS_PORT:-8081}"
       WORDPRESS_DEBUG: ${WORDPRESS_DEBUG:-1}
       BEAUTYCORE_GEMINI_API_KEY: ${BEAUTYCORE_GEMINI_API_KEY:-}
       WORDPRESS_CONFIG_EXTRA: |
+        if (!defined('WP_HOME')) define('WP_HOME', getenv('WORDPRESS_HOME') ?: 'http://localhost:8081');
+        if (!defined('WP_SITEURL')) define('WP_SITEURL', getenv('WORDPRESS_SITEURL') ?: 'http://localhost:8081');
         define('BEAUTYCORE_GEMINI_API_KEY', getenv('BEAUTYCORE_GEMINI_API_KEY') ?: '');
     volumes:
       - beautycore_wordpress:/var/www/html

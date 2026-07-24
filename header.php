@@ -17,7 +17,7 @@ $is_home = is_front_page();
 <?php wp_body_open(); ?>
 <header class="site-header<?php echo $is_home ? ' hero-mode' : ' scrolled'; ?>" id="site-header">
     <div class="header-inner">
-        <a href="<?php echo esc_url(home_url('/')); ?>" class="site-logo" aria-label="Beauty Core - Trang chủ">
+        <a href="<?php echo esc_url(beautycore_home_path()); ?>" class="site-logo" aria-label="Beauty Core - Trang chủ">
             <img src="<?php echo esc_url(beautycore_asset_url('/images/logo.jpg')); ?>" alt="Beauty Core - Tiệm Gội Đầu Thư Giãn">
         </a>
         <nav class="main-nav" id="main-nav" aria-label="Điều hướng chính">

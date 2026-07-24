@@ -20,7 +20,7 @@ docker compose up -d
 
 Sau khi thay đổi `Dockerfile` hoặc cấu hình Apache, chạy `docker compose up -d --build`.
 
-Mở `http://localhost:8080`, hoàn tất cài đặt WordPress, kích hoạt theme **Beauty Core**, rồi vào `Settings → Permalinks → Save Changes`.
+Mở `http://localhost:8081`, hoàn tất cài đặt WordPress, kích hoạt theme **Beauty Core**, rồi vào `Settings → Permalinks → Save Changes`.
 
 Dừng container nhưng giữ dữ liệu:
 
@@ -59,3 +59,20 @@ Nếu không cấu hình key, các nút liên hệ và đặt lịch vẫn hoạ
 Khi kích hoạt theme, Beauty Core tự động đồng bộ 13 bài viết, toàn bộ ảnh và video trong `public` vào WordPress. Bài viết xuất hiện trong menu **Bài viết**, còn media nằm trong **Media → Library**.
 
 Muốn chạy lại import, vào **Tools → Beauty Core Import** trong wp-admin.
+
+## Quản lý lịch hẹn
+
+Vào **Beauty Core → Lịch hẹn** để xem danh sách hoặc calendar ngày/tuần/tháng,
+tạo lịch tại quầy, đổi giờ/nhân viên, check-in, hoàn tất, hủy và theo dõi lịch
+sử thao tác. Bộ lọc hỗ trợ mã lịch, số điện thoại, ngày, trạng thái, nhân viên
+và chi nhánh.
+
+Giờ làm việc, khoảng đệm chống trùng, thời điểm nhắc lịch và ngày nghỉ nhân
+viên được cấu hình tại **Beauty Core → Cấu hình**. Cron WordPress gửi nhắc
+trước theo cấu hình và bỏ qua lịch đã hủy.
+
+Để thêm form đặt lịch vào một trang website, dùng shortcode:
+
+~~~text
+[beautycore_booking_form]
+~~~

@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('BEAUTYCORE_VERSION', '1.0.0');
+define('BEAUTYCORE_VERSION', '1.0.2');
 define('BEAUTYCORE_CONTENT_VERSION', '2.0.0');
 define('BEAUTYCORE_THEME_DIR', get_template_directory());
 
@@ -17,6 +17,7 @@ require_once BEAUTYCORE_THEME_DIR . '/inc/services.php';
 require_once BEAUTYCORE_THEME_DIR . '/inc/import.php';
 require_once BEAUTYCORE_THEME_DIR . '/inc/ai.php';
 require_once BEAUTYCORE_THEME_DIR . '/inc/seo.php';
+require_once BEAUTYCORE_THEME_DIR . '/inc/appointments.php';
 require_once BEAUTYCORE_THEME_DIR . '/inc/admin.php';
 require_once BEAUTYCORE_THEME_DIR . '/inc/service-admin.php';
 
@@ -62,6 +63,68 @@ function beautycore_enqueue_assets() {
     ));
 }
 add_action('wp_enqueue_scripts', 'beautycore_enqueue_assets');
+
+/**
+ * Keep frontend home links independent from the development host and port.
+ *
+ * wp_make_link_relative() preserves a production subdirectory (for example
+ * /conamspa/) while preventing a stale localhost port from being embedded in
+ * navigation markup.
+ */
+function beautycore_home_path() {
+    $path = wp_make_link_relative(home_url('/'));
+    $host = wp_parse_url(home_url('/'), PHP_URL_HOST);
+    $port = wp_parse_url(home_url('/'), PHP_URL_PORT);
+
+    $path = $path ?: '/';
+
+    // A previous local setup permanently redirected "/" to port 8080.
+    // Use a distinct local URL so browsers bypass that cached 301/308 entry.
+    if (in_array($host, array('localhost', '127.0.0.1'), true) && $port) {
+        return add_query_arg('bc_port', (string) $port, $path);
+    }
+
+    return $path;
+}
+
+function beautycore_relative_home_menu_link($attributes) {
+    if (empty($attributes['href'])) {
+        return $attributes;
+    }
+
+    if (untrailingslashit($attributes['href']) === untrailingslashit(home_url('/'))) {
+        $attributes['href'] = beautycore_home_path();
+    }
+
+    return $attributes;
+}
+add_filter('nav_menu_link_attributes', 'beautycore_relative_home_menu_link');
+
+function beautycore_admin_bar_home_links($admin_bar) {
+    if (!is_admin_bar_showing()) {
+        return;
+    }
+
+    $home_link = beautycore_home_path();
+    foreach (array('site-name', 'view-site') as $node_id) {
+        $node = $admin_bar->get_node($node_id);
+        if (!$node) {
+            continue;
+        }
+
+        $node->href = $home_link;
+        $admin_bar->add_node((array) $node);
+    }
+}
+add_action('admin_bar_menu', 'beautycore_admin_bar_home_links', 999);
+
+function beautycore_disable_local_page_cache() {
+    $host = wp_parse_url(home_url('/'), PHP_URL_HOST);
+    if (in_array($host, array('localhost', '127.0.0.1'), true)) {
+        nocache_headers();
+    }
+}
+add_action('send_headers', 'beautycore_disable_local_page_cache', 100);
 
 function beautycore_asset_url($path) {
     if (!$path) {
@@ -119,7 +182,7 @@ function beautycore_is_active_path($slug) {
 
 function beautycore_primary_fallback() {
     $items = array(
-        array('label' => 'Trang chủ', 'url' => home_url('/'), 'slug' => 'trang-chu'),
+        array('label' => 'Trang chủ', 'url' => beautycore_home_path(), 'slug' => 'trang-chu'),
         array('label' => 'Giới thiệu', 'url' => beautycore_page_url('gioi-thieu'), 'slug' => 'gioi-thieu'),
         array('label' => 'Dịch vụ', 'url' => beautycore_page_url('dich-vu'), 'slug' => 'dich-vu'),
         array('label' => 'Blog', 'url' => beautycore_page_url('blog'), 'slug' => 'blog'),

@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
 
 function beautycore_service_admin_menu() {
     add_submenu_page(
-        null,
+        'beautycore-dashboard',
         'Thêm / sửa dịch vụ',
         'Thêm / sửa dịch vụ',
         'manage_beautycore_services',
@@ -19,13 +19,18 @@ function beautycore_service_admin_menu() {
 }
 add_action('admin_menu', 'beautycore_service_admin_menu', 10);
 
+function beautycore_hide_service_edit_submenu_markup() {
+    echo '<style>#adminmenu a[href*="page=beautycore-service-edit"]{display:none!important}</style>';
+}
+add_action('admin_head', 'beautycore_hide_service_edit_submenu_markup', 20);
+
 function beautycore_service_admin_assets($hook) {
     if (empty($_GET['page'])) {
         return;
     }
 
     $page = sanitize_key(wp_unslash($_GET['page']));
-    if ($page !== 'beautycore-services' && $page !== 'beautycore-pricing' && $page !== 'beautycore-service-edit') {
+    if ($page !== 'beautycore-services' && $page !== 'beautycore-service-edit') {
         return;
     }
 
@@ -37,6 +42,10 @@ function beautycore_service_admin_assets($hook) {
         BEAUTYCORE_ADMIN_VERSION,
         true
     );
+    wp_localize_script('beautycore-service-admin', 'BEAUTYCORE_SERVICE_ADMIN', array(
+        'ajaxUrl'  => admin_url('admin-ajax.php'),
+        'nonce'    => wp_create_nonce('beautycore_service_modal'),
+    ));
 }
 add_action('admin_enqueue_scripts', 'beautycore_service_admin_assets');
 
@@ -44,6 +53,12 @@ function beautycore_service_admin_redirect($args = array(), $page = 'beautycore-
     $url = add_query_arg(array_merge(array('page' => $page), $args), admin_url('admin.php'));
     wp_safe_redirect($url);
     exit;
+}
+
+function beautycore_service_validation_redirect($error) {
+    beautycore_service_admin_redirect(array(
+        'error' => $error,
+    ), 'beautycore-services');
 }
 
 function beautycore_service_admin_notice() {
@@ -66,7 +81,7 @@ function beautycore_service_admin_status_label($status) {
     return isset($statuses[$status]) ? $statuses[$status] : $status;
 }
 
-function beautycore_render_service_filters($pricing_view = false) {
+function beautycore_render_service_filters() {
     $search = isset($_GET['s']) ? sanitize_text_field(wp_unslash($_GET['s'])) : '';
     $category = isset($_GET['category']) ? absint($_GET['category']) : 0;
     $status = isset($_GET['status']) ? sanitize_key(wp_unslash($_GET['status'])) : 'all';
@@ -74,8 +89,8 @@ function beautycore_render_service_filters($pricing_view = false) {
     $terms = get_terms(array('taxonomy' => 'beautycore_service_category', 'hide_empty' => false));
     $statuses = beautycore_service_statuses();
 
-    echo '<form class="beautycore-service-filters" method="get">';
-    echo '<input type="hidden" name="page" value="' . esc_attr($pricing_view ? 'beautycore-pricing' : 'beautycore-services') . '">';
+    echo '<form class="beautycore-service-filters" method="get" data-beautycore-auto-filter>';
+    echo '<input type="hidden" name="page" value="beautycore-services">';
     echo '<label class="screen-reader-text" for="beautycore-service-search">Tìm dịch vụ</label><input id="beautycore-service-search" type="search" name="s" value="' . esc_attr($search) . '" placeholder="Tìm theo tên dịch vụ...">';
     echo '<select name="category"><option value="0">Tất cả danh mục</option>';
     if (!is_wp_error($terms)) {
@@ -88,9 +103,9 @@ function beautycore_render_service_filters($pricing_view = false) {
         echo '<option value="' . esc_attr($status_key) . '" ' . selected($status, $status_key, false) . '>' . esc_html($status_label) . '</option>';
     }
     echo '</select><select name="featured"><option value="all">Nổi bật: tất cả</option><option value="1" ' . selected($featured, '1', false) . '>Đang nổi bật</option><option value="0" ' . selected($featured, '0', false) . '>Không nổi bật</option></select>';
-    submit_button('Lọc', 'secondary', '', false);
+    echo '<noscript><button type="submit" class="button button-secondary">Lọc</button></noscript>';
     if ($search || $category || $status !== 'all' || $featured !== 'all') {
-        echo ' <a class="button" href="' . esc_url(admin_url('admin.php?page=' . ($pricing_view ? 'beautycore-pricing' : 'beautycore-services'))) . '">Xóa bộ lọc</a>';
+        echo ' <a class="button" href="' . esc_url(admin_url('admin.php?page=beautycore-services')) . '">Xóa bộ lọc</a>';
     }
     echo '</form>';
 }
@@ -134,7 +149,7 @@ function beautycore_service_category_names($post_id) {
     return implode(', ', wp_list_pluck($terms, 'name'));
 }
 
-function beautycore_render_services_page($pricing_view = false) {
+function beautycore_render_services_page() {
     if (!current_user_can('view_beautycore_services')) {
         wp_die('Bạn không có quyền xem dịch vụ.');
     }
@@ -142,10 +157,10 @@ function beautycore_render_services_page($pricing_view = false) {
     beautycore_service_admin_notice();
     echo '<div class="beautycore-service-toolbar"><div>';
     if (current_user_can('manage_beautycore_services')) {
-        echo '<a class="button button-primary" href="' . esc_url(admin_url('admin.php?page=beautycore-service-edit')) . '">Thêm dịch vụ</a> <a class="button" href="#beautycore-categories">Quản lý danh mục</a>';
+        echo '<a class="button button-primary beautycore-add-service" href="' . esc_url(admin_url('admin.php?page=beautycore-service-edit')) . '">Thêm dịch vụ</a> <a class="button" href="#beautycore-categories">Quản lý danh mục</a>';
     }
-    echo '</div><span class="description">' . esc_html($pricing_view ? 'Quản lý giá gốc, giá khuyến mãi và thời gian áp dụng.' : 'Quản lý thông tin, trạng thái và cách hiển thị dịch vụ.') . '</span></div>';
-    beautycore_render_service_filters($pricing_view);
+    echo '</div><span class="description">Quản lý thông tin, giá, trạng thái và cách hiển thị dịch vụ.</span></div>';
+    beautycore_render_service_filters();
 
     $services = beautycore_get_admin_services();
     if (!$services) {
@@ -161,20 +176,29 @@ function beautycore_render_services_page($pricing_view = false) {
                 $branch_count = count($meta['branch_ids']);
             }
             echo '<tr>';
-            echo '<td><strong><a href="' . esc_url($edit_url) . '">' . esc_html($service->post_title) . '</a></strong>' . ($meta['featured'] ? ' <span class="beautycore-featured">Nổi bật</span>' : '') . '<div class="row-actions"><span><a href="' . esc_url($edit_url) . '">Sửa</a></span> | <span><a href="' . esc_url(wp_nonce_url(admin_url('admin-post.php?action=beautycore_toggle_service&id=' . $service->ID), 'beautycore_toggle_service_' . $service->ID)) . '">' . ($service->post_status === 'publish' ? 'Ẩn nhanh' : 'Xuất bản') . '</a></span> | <span class="trash"><a href="' . esc_url(wp_nonce_url(admin_url('admin-post.php?action=beautycore_delete_service&id=' . $service->ID), 'beautycore_delete_service_' . $service->ID)) . '" onclick="return confirm(\'Xóa dịch vụ này?\');">Xóa</a></span></div></td>';
+            echo '<td><strong><a class="beautycore-edit-service" data-service-id="' . esc_attr($service->ID) . '" href="' . esc_url($edit_url) . '">' . esc_html($service->post_title) . '</a></strong>' . ($meta['featured'] ? ' <span class="beautycore-featured">Nổi bật</span>' : '') . '<div class="row-actions"><span><a class="beautycore-edit-service" data-service-id="' . esc_attr($service->ID) . '" href="' . esc_url($edit_url) . '">Sửa</a></span> | <span><a href="' . esc_url(wp_nonce_url(admin_url('admin-post.php?action=beautycore_toggle_service&id=' . $service->ID), 'beautycore_toggle_service_' . $service->ID)) . '">' . ($service->post_status === 'publish' ? 'Ẩn nhanh' : 'Xuất bản') . '</a></span> | <span class="trash"><a href="' . esc_url(wp_nonce_url(admin_url('admin-post.php?action=beautycore_delete_service&id=' . $service->ID), 'beautycore_delete_service_' . $service->ID)) . '" onclick="return confirm(\'Xóa dịch vụ này?\');">Xóa</a></span></div></td>';
             echo '<td>' . esc_html(beautycore_service_category_names($service->ID)) . '</td>';
             echo '<td><strong>' . wp_kses_post(beautycore_service_price_html($meta)) . '</strong></td>';
             echo '<td>' . esc_html($meta['duration'] ? $meta['duration'] . ' phút' : '—') . '</td>';
             echo '<td>' . esc_html($branch_count ? $branch_count . ' chi nhánh' : 'Chưa gán') . '</td>';
             echo '<td><span class="beautycore-status beautycore-status-' . esc_attr($service->post_status) . '">' . esc_html(beautycore_service_admin_status_label($service->post_status)) . '</span></td>';
             echo '<td>' . esc_html(get_the_modified_date('d/m/Y H:i', $service)) . '</td>';
-            echo '<td><a class="button button-small" href="' . esc_url($edit_url) . '">Mở</a></td>';
+            echo '<td><a class="button button-small beautycore-edit-service" data-service-id="' . esc_attr($service->ID) . '" href="' . esc_url($edit_url) . '">Mở</a></td>';
             echo '</tr>';
         }
         echo '</tbody></table></div>';
     }
 
     beautycore_render_service_categories_panel();
+    beautycore_render_service_modal();
+}
+
+function beautycore_render_service_modal() {
+    if (!current_user_can('manage_beautycore_services')) {
+        return;
+    }
+
+    echo '<div id="beautycore-service-modal" class="beautycore-service-modal" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="beautycore-service-modal-title"><div class="beautycore-service-modal__backdrop" data-beautycore-modal-close></div><div class="beautycore-service-modal__dialog"><div class="beautycore-service-modal__header"><h2 id="beautycore-service-modal-title">Thêm dịch vụ</h2><button type="button" class="button-link beautycore-service-modal__close" data-beautycore-modal-close aria-label="Đóng">&times;</button></div><div id="beautycore-service-modal-body" class="beautycore-service-modal__body"><p class="beautycore-modal-loading">Đang chuẩn bị biểu mẫu...</p></div></div></div>';
 }
 
 function beautycore_render_service_categories_panel() {
@@ -208,12 +232,12 @@ function beautycore_render_service_field($label, $field, $value, $type = 'text',
     echo '</label>' . ($description ? '<p class="description">' . esc_html($description) . '</p>' : '') . '</div>';
 }
 
-function beautycore_render_service_edit_page() {
+function beautycore_render_service_edit_page($service_id_override = null, $fragment = false) {
     if (!current_user_can('manage_beautycore_services')) {
         wp_die('Bạn không có quyền chỉnh sửa dịch vụ.');
     }
 
-    $service_id = isset($_GET['id']) ? absint($_GET['id']) : 0;
+    $service_id = $service_id_override === null ? (isset($_GET['id']) ? absint($_GET['id']) : 0) : absint($service_id_override);
     $service = $service_id ? get_post($service_id) : null;
     if ($service_id && (!$service || $service->post_type !== 'beautycore_service')) {
         wp_die('Không tìm thấy dịch vụ.');
@@ -231,8 +255,10 @@ function beautycore_render_service_edit_page() {
     $status = $service ? $service->post_status : 'draft';
     $slug = $service ? $service->post_name : '';
 
-    beautycore_admin_page_header($service ? 'Sửa dịch vụ' : 'Thêm dịch vụ', 'Cập nhật một nơi để website và bảng giá luôn dùng cùng một dữ liệu.');
-    if (!empty($_GET['error'])) {
+    if (!$fragment) {
+        beautycore_admin_page_header($service ? 'Sửa dịch vụ' : 'Thêm dịch vụ', 'Cập nhật tập trung thông tin và giá để website luôn dùng cùng một dữ liệu.');
+    }
+    if (!$fragment && !empty($_GET['error'])) {
         echo '<div class="notice notice-error"><p>' . esc_html(wp_unslash($_GET['error'])) . '</p></div>';
     }
     echo '<form class="beautycore-service-form" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
@@ -242,7 +268,7 @@ function beautycore_render_service_edit_page() {
 
     echo '<section id="tab-info" class="beautycore-panel beautycore-form-tab"><h2>Thông tin dịch vụ</h2>';
     beautycore_render_service_field('Tên dịch vụ', 'title', $service ? $service->post_title : '', 'text');
-    beautycore_render_service_field('Slug', 'slug', $slug, 'text', 'Để trống để tự tạo từ tên dịch vụ.');
+    echo '<div class="beautycore-form-field"><label for="slug"><strong>Slug</strong></label><div class="beautycore-slug-control"><input id="slug" type="text" name="slug" value="' . esc_attr($slug) . '"><button type="button" class="button" id="beautycore-generate-slug">Tạo slug</button></div><p class="description">Để trống để tự tạo từ tên dịch vụ hoặc bấm “Tạo slug”.</p></div>';
     echo '<div class="beautycore-form-field"><label for="service-category"><strong>Danh mục</strong></label><select id="service-category" name="category_id"><option value="0">Chưa phân loại</option>';
     if ($categories && !is_wp_error($categories)) {
         foreach ($categories as $category) {
@@ -297,9 +323,24 @@ function beautycore_render_service_edit_page() {
     }
     echo '</select></div><div class="beautycore-checkbox-field"><label><input type="checkbox" name="featured" value="1" ' . checked($meta['featured'], true, false) . '> Đánh dấu nổi bật trên trang chủ</label></div>';
     beautycore_render_service_field('Thứ tự trang chủ', 'homepage_order', $meta['homepage_order'], 'number', 'Số nhỏ hơn sẽ hiển thị trước.');
-    echo '</section><div class="beautycore-form-actions"><button type="submit" class="button button-primary button-large">Lưu dịch vụ</button><a class="button button-large" href="' . esc_url(admin_url('admin.php?page=beautycore-services')) . '">Hủy</a></div></aside></div></form>';
-    beautycore_admin_page_footer();
+    echo '</section><div class="beautycore-form-actions"><button type="submit" class="button button-primary button-large">Lưu dịch vụ</button><a class="button button-large" data-beautycore-modal-close href="' . esc_url(admin_url('admin.php?page=beautycore-services')) . '">Hủy</a></div></aside></div></form>';
+    if (!$fragment) {
+        beautycore_admin_page_footer();
+    }
 }
+
+function beautycore_ajax_service_form() {
+    if (!current_user_can('manage_beautycore_services')) {
+        wp_send_json_error(array('message' => 'Bạn không có quyền chỉnh sửa dịch vụ.'), 403);
+    }
+    check_ajax_referer('beautycore_service_modal');
+
+    $service_id = isset($_GET['service_id']) ? absint($_GET['service_id']) : 0;
+    ob_start();
+    beautycore_render_service_edit_page($service_id, true);
+    wp_send_json_success(ob_get_clean());
+}
+add_action('wp_ajax_beautycore_service_form', 'beautycore_ajax_service_form');
 
 function beautycore_handle_save_service() {
     if (!current_user_can('manage_beautycore_services')) {
@@ -314,7 +355,7 @@ function beautycore_handle_save_service() {
     }
     $title = isset($_POST['title']) ? sanitize_text_field(wp_unslash($_POST['title'])) : '';
     if (!$title) {
-        beautycore_service_admin_redirect(array('error' => 'Tên dịch vụ là bắt buộc.', 'id' => $service_id), 'beautycore-service-edit');
+        beautycore_service_validation_redirect('Tên dịch vụ là bắt buộc.');
     }
 
     $original_raw = isset($_POST['price_original']) ? str_replace(',', '', sanitize_text_field(wp_unslash($_POST['price_original']))) : '';
@@ -335,7 +376,7 @@ function beautycore_handle_save_service() {
         $error = 'Thời lượng phải lớn hơn 0 phút.';
     }
     if ($error) {
-        beautycore_service_admin_redirect(array('error' => $error, 'id' => $service_id), 'beautycore-service-edit');
+        beautycore_service_validation_redirect($error);
     }
 
     $allowed_statuses = array_keys(beautycore_service_statuses());
@@ -352,7 +393,7 @@ function beautycore_handle_save_service() {
         'post_content' => isset($_POST['content']) ? wp_kses_post(wp_unslash($_POST['content'])) : '',
     )), true);
     if (is_wp_error($post_id)) {
-        beautycore_service_admin_redirect(array('error' => $post_id->get_error_message(), 'id' => $service_id), 'beautycore-service-edit');
+        beautycore_service_validation_redirect($post_id->get_error_message());
     }
 
     $category_id = isset($_POST['category_id']) ? absint($_POST['category_id']) : 0;

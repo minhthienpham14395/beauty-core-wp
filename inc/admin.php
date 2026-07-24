@@ -11,7 +11,21 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('BEAUTYCORE_ADMIN_VERSION', '1.1.0');
+define('BEAUTYCORE_ADMIN_VERSION', '1.3.11');
+
+function beautycore_admin_role_labels() {
+    return array(
+        'administrator' => 'Quản trị viên',
+        'owner'         => 'Chủ cơ sở',
+        'manager'       => 'Quản lý',
+        'receptionist'  => 'Lễ tân',
+        'staff'         => 'Nhân viên',
+        'editor'        => 'Biên tập viên',
+        'author'        => 'Tác giả',
+        'contributor'   => 'Cộng tác viên',
+        'subscriber'    => 'Thành viên',
+    );
+}
 
 /**
  * Return the capabilities used by the Beauty Core admin area.
@@ -24,6 +38,8 @@ function beautycore_admin_role_capabilities() {
         'view_beautycore_services'     => true,
         'manage_beautycore_services'   => true,
         'manage_beautycore_pricing'    => true,
+        'view_beautycore_schedule'     => true,
+        'manage_beautycore_appointments'=> true,
         'view_beautycore_reports'       => true,
             'view_beautycore_settings'      => true,
             'view_beautycore_audit'         => true,
@@ -81,14 +97,9 @@ function beautycore_admin_role_capabilities() {
  * Create/update the five business roles without changing existing users.
  */
 function beautycore_register_roles() {
-    $labels = array(
-        'owner'       => 'Owner',
-        'manager'     => 'Manager',
-        'receptionist'=> 'Receptionist',
-        'staff'       => 'Staff',
-        'editor'      => 'Editor',
-    );
     $capabilities = beautycore_admin_role_capabilities();
+    $all_labels = beautycore_admin_role_labels();
+    $labels = array_intersect_key($all_labels, $capabilities);
 
     foreach ($labels as $role_key => $label) {
         $role = get_role($role_key);
@@ -102,6 +113,24 @@ function beautycore_register_roles() {
                     $role->add_cap($capability);
                 }
             }
+        }
+    }
+
+    // Role names are stored separately from capabilities. Update the saved
+    // definitions so existing roles are renamed without removing user access.
+    $wp_roles = wp_roles();
+    $stored_roles = get_option($wp_roles->role_key, array());
+    if (is_array($stored_roles)) {
+        foreach ($all_labels as $role_key => $label) {
+            if (isset($stored_roles[$role_key])) {
+                $stored_roles[$role_key]['name'] = $label;
+            }
+        }
+        update_option($wp_roles->role_key, $stored_roles);
+        $wp_roles->roles = $stored_roles;
+        $wp_roles->role_names = array();
+        foreach ($stored_roles as $role_key => $role_data) {
+            $wp_roles->role_names[$role_key] = $role_data['name'];
         }
     }
 
@@ -144,7 +173,6 @@ function beautycore_admin_menu() {
     add_submenu_page('beautycore-dashboard', 'Tổng quan', 'Tổng quan', 'view_beautycore_dashboard', 'beautycore-dashboard', 'beautycore_render_dashboard_page');
     add_submenu_page('beautycore-dashboard', 'Lịch hẹn', 'Lịch hẹn', 'view_beautycore_schedule', 'beautycore-appointments', 'beautycore_render_module_page');
     add_submenu_page('beautycore-dashboard', 'Dịch vụ', 'Dịch vụ', 'view_beautycore_services', 'beautycore-services', 'beautycore_render_module_page');
-    add_submenu_page('beautycore-dashboard', 'Bảng giá', 'Bảng giá', 'view_beautycore_services', 'beautycore-pricing', 'beautycore_render_module_page');
     add_submenu_page('beautycore-dashboard', 'Nhân viên', 'Nhân viên', 'manage_beautycore_staff', 'beautycore-staff', 'beautycore_render_module_page');
     add_submenu_page('beautycore-dashboard', 'Chi nhánh', 'Chi nhánh', 'view_beautycore_branches', 'beautycore-branches', 'beautycore_render_module_page');
     add_submenu_page('beautycore-dashboard', 'Khách hàng', 'Khách hàng', 'manage_beautycore_customers', 'beautycore-customers', 'beautycore_render_module_page');
@@ -153,8 +181,22 @@ function beautycore_admin_menu() {
     add_submenu_page('beautycore-dashboard', 'Báo cáo', 'Báo cáo', 'view_beautycore_reports', 'beautycore-reports', 'beautycore_render_module_page');
     add_submenu_page('beautycore-dashboard', 'Cấu hình', 'Cấu hình', 'view_beautycore_settings', 'beautycore-settings', 'beautycore_render_module_page');
     add_submenu_page('beautycore-dashboard', 'Nhật ký thao tác', 'Nhật ký thao tác', 'view_beautycore_audit', 'beautycore-audit', 'beautycore_render_module_page');
+    add_submenu_page(null, 'Sửa lịch hẹn', 'Sửa lịch hẹn', 'manage_beautycore_appointments', 'beautycore-appointment-edit', 'beautycore_render_appointment_edit_page');
 }
 add_action('admin_menu', 'beautycore_admin_menu', 9);
+
+function beautycore_redirect_legacy_pricing_page() {
+    if (!isset($_GET['page']) || sanitize_key(wp_unslash($_GET['page'])) !== 'beautycore-pricing') {
+        return;
+    }
+    if (!current_user_can('view_beautycore_services')) {
+        return;
+    }
+
+    wp_safe_redirect(admin_url('admin.php?page=beautycore-services'));
+    exit;
+}
+add_action('admin_init', 'beautycore_redirect_legacy_pricing_page', 2);
 
 function beautycore_wordpress_menu_page() {
     if (!current_user_can('read')) {
@@ -298,13 +340,13 @@ function beautycore_restrict_admin_pages() {
     );
 
     if (in_array($pagenow, $blocked_pages, true)) {
-        wp_die('Khu vực này chỉ dành cho Administrator.');
+        wp_die('Khu vực này chỉ dành cho Quản trị viên.');
     }
 
     if ($pagenow === 'admin.php' && isset($_GET['page'])) {
         $admin_page = sanitize_key(wp_unslash($_GET['page']));
         if (strpos($admin_page, 'beautycore-') !== 0) {
-            wp_die('Trang quản trị mở rộng chỉ dành cho Administrator.');
+            wp_die('Trang quản trị mở rộng chỉ dành cho Quản trị viên.');
         }
     }
 
@@ -346,6 +388,7 @@ function beautycore_dashboard_appointment_post_types() {
 
 function beautycore_dashboard_appointment_data($post) {
     $date = beautycore_dashboard_meta($post->ID, array(
+        '_beautycore_appointment_start',
         '_beautycore_appointment_datetime',
         '_beautycore_booking_datetime',
         '_beautycore_appointment_date',
@@ -513,7 +556,7 @@ function beautycore_render_dashboard_contents($show_header = true) {
     beautycore_render_appointments_table($metrics['today_appointments']);
     echo '</section>';
 
-    echo '<section class="beautycore-panel"><div class="beautycore-panel-heading"><h2>Dịch vụ phổ biến</h2><a href="' . esc_url(admin_url('admin.php?page=beautycore-pricing')) . '">Xem bảng giá</a></div>';
+    echo '<section class="beautycore-panel"><div class="beautycore-panel-heading"><h2>Dịch vụ phổ biến</h2><a href="' . esc_url(admin_url('admin.php?page=beautycore-services')) . '">Quản lý dịch vụ</a></div>';
     if ($metrics['popular_services']) {
         echo '<ol class="beautycore-ranking">';
         foreach (array_slice($metrics['popular_services'], 0, 5, true) as $service => $count) {
@@ -527,7 +570,7 @@ function beautycore_render_dashboard_contents($show_header = true) {
     echo '</div>';
 
     echo '<section class="beautycore-panel beautycore-notice-panel"><h2>Thông báo vận hành</h2><ul class="beautycore-checklist">';
-    echo '<li><span class="dashicons dashicons-yes-alt"></span>Đã bật các vai trò Owner, Manager, Receptionist, Staff và Editor.</li>';
+    echo '<li><span class="dashicons dashicons-yes-alt"></span>Đã bật các vai trò Chủ cơ sở, Quản lý, Lễ tân, Nhân viên và Biên tập viên.</li>';
     echo '<li><span class="dashicons dashicons-yes-alt"></span>Menu hệ thống, plugin, theme và cài đặt WordPress bị giới hạn với nhân viên.</li>';
     echo '<li><span class="dashicons dashicons-yes-alt"></span>Nhật ký thao tác được lưu cho các thay đổi nhạy cảm.</li>';
     echo '</ul></section>';
@@ -601,6 +644,12 @@ function beautycore_render_reports_page() {
 function beautycore_render_settings_page() {
     $config = beautycore_site_config();
 
+    if (!empty($_GET['updated'])) {
+        echo '<div class="notice notice-success is-dismissible"><p>Cấu hình lịch hẹn đã được lưu.</p></div>';
+    } elseif (!empty($_GET['error'])) {
+        echo '<div class="notice notice-error"><p>' . esc_html(wp_unslash($_GET['error'])) . '</p></div>';
+    }
+
     echo '<div class="beautycore-settings-grid"><section class="beautycore-panel"><h2>Thông tin cơ sở</h2><dl class="beautycore-definition-list">';
     foreach (array('name' => 'Tên cơ sở', 'phone_display' => 'Điện thoại', 'email' => 'Email', 'address' => 'Địa chỉ', 'opening_hours' => 'Giờ mở cửa') as $key => $label) {
         echo '<dt>' . esc_html($label) . '</dt><dd>' . esc_html(isset($config[$key]) ? $config[$key] : '') . '</dd>';
@@ -610,8 +659,11 @@ function beautycore_render_settings_page() {
     echo '<li><span class="dashicons dashicons-yes-alt"></span>Mật khẩu mới được yêu cầu tối thiểu 12 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.</li>';
     echo '<li><span class="dashicons dashicons-yes-alt"></span>Đăng nhập sai nhiều lần sẽ bị khóa tạm thời theo tài khoản và địa chỉ IP.</li>';
     echo '<li><span class="dashicons dashicons-info-outline"></span>Xác thực hai bước cần được bật qua plugin 2FA tương thích WordPress.</li>';
-    echo '<li><span class="dashicons dashicons-lock"></span>Chỉ Administrator được truy cập plugin, theme và Settings hệ thống.</li>';
+    echo '<li><span class="dashicons dashicons-lock"></span>Chỉ Quản trị viên được truy cập plugin, giao diện và Cài đặt hệ thống.</li>';
     echo '</ul></section></div>';
+    if (function_exists('beautycore_render_appointment_settings_panel')) {
+        beautycore_render_appointment_settings_panel();
+    }
 }
 
 function beautycore_render_audit_page() {
@@ -633,9 +685,8 @@ function beautycore_render_audit_page() {
 function beautycore_render_module_page() {
     $slug = isset($_GET['page']) ? sanitize_key(wp_unslash($_GET['page'])) : '';
     $modules = array(
-        'beautycore-appointments' => array('title' => 'Lịch hẹn', 'description' => 'Theo dõi lịch hôm nay và lịch đang chờ xử lý.', 'capability' => 'view_beautycore_schedule'),
+        'beautycore-appointments' => array('title' => 'Lịch hẹn', 'description' => 'Danh sách, calendar, điều phối và nhắc lịch hẹn.', 'capability' => 'view_beautycore_schedule'),
         'beautycore-services'     => array('title' => 'Dịch vụ', 'description' => 'Danh mục dịch vụ hiện đang được website sử dụng.', 'capability' => 'view_beautycore_services'),
-        'beautycore-pricing'      => array('title' => 'Bảng giá', 'description' => 'Bảng giá hiện tại của Beauty Core.', 'capability' => 'view_beautycore_services'),
         'beautycore-reports'      => array('title' => 'Báo cáo', 'description' => 'Tổng hợp nhanh các chỉ số quản trị.', 'capability' => 'view_beautycore_reports'),
         'beautycore-settings'     => array('title' => 'Cấu hình', 'description' => 'Thông tin cơ sở và trạng thái bảo vệ dashboard.', 'capability' => 'view_beautycore_settings'),
         'beautycore-audit'        => array('title' => 'Nhật ký thao tác', 'description' => 'Theo dõi người dùng và thời gian thực hiện các thao tác nhạy cảm.', 'capability' => 'view_beautycore_audit'),
@@ -654,16 +705,13 @@ function beautycore_render_module_page() {
     beautycore_admin_page_header($module['title'], $module['description']);
 
     if ($slug === 'beautycore-appointments') {
-        $appointments = beautycore_dashboard_appointments();
-        if (current_user_can('view_beautycore_own_schedule') && !current_user_can('manage_beautycore_appointments')) {
-            $user_id = get_current_user_id();
-            $appointments = array_filter($appointments, function ($appointment) use ($user_id) {
-                return (int) $appointment['staff_id'] === (int) $user_id;
-            });
+        if (function_exists('beautycore_render_appointment_admin_page')) {
+            beautycore_render_appointment_admin_page();
+        } else {
+            beautycore_render_appointments_table(beautycore_dashboard_appointments(), 100);
         }
-        beautycore_render_appointments_table($appointments, 100);
-    } elseif ($slug === 'beautycore-services' || $slug === 'beautycore-pricing') {
-        beautycore_render_services_page($slug === 'beautycore-pricing');
+    } elseif ($slug === 'beautycore-services') {
+        beautycore_render_services_page();
     } elseif ($slug === 'beautycore-reports') {
         beautycore_render_reports_page();
     } elseif ($slug === 'beautycore-settings') {

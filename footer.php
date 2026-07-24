@@ -8,7 +8,7 @@ $config = beautycore_site_config();
     <div class="container">
         <div class="footer-inner">
             <div class="footer-brand">
-                <a href="<?php echo esc_url(home_url('/')); ?>" class="footer-logo" aria-label="Beauty Core - Trang chủ">
+                <a href="<?php echo esc_url(beautycore_home_path()); ?>" class="footer-logo" aria-label="Beauty Core - Trang chủ">
                     <img src="<?php echo esc_url(beautycore_asset_url('/images/logo.jpg')); ?>" alt="Beauty Core - Tiệm gội đầu và massage" loading="lazy">
                 </a>
                 <p><strong>BEAUTY CORE - TIỆM GỘI ĐẦU &amp; MASSAGE</strong></p>
