@@ -1,0 +1,436 @@
+.beautycore-admin-page {
+    max-width: 1320px;
+}
+
+.beautycore-page-description {
+    color: #646970;
+    font-size: 14px;
+    margin: -4px 0 20px;
+}
+
+.beautycore-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+}
+
+.beautycore-stat-card,
+.beautycore-panel {
+    background: #fff;
+    border: 1px solid #e2e4e7;
+    border-radius: 8px;
+    box-sizing: border-box;
+    padding: 20px;
+}
+
+.beautycore-stat-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 104px;
+}
+
+.beautycore-stat-primary {
+    border-color: #c9a56a;
+    box-shadow: inset 4px 0 #c9a56a;
+}
+
+.beautycore-stat-label {
+    color: #646970;
+    font-size: 13px;
+}
+
+.beautycore-stat-value {
+    color: #1d2327;
+    font-size: 30px;
+    line-height: 1;
+}
+
+.beautycore-dashboard-grid,
+.beautycore-settings-grid,
+.beautycore-service-grid {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: 20px;
+}
+
+.beautycore-service-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.beautycore-panel-heading {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.beautycore-panel h2 {
+    font-size: 17px;
+    margin: 0 0 14px;
+}
+
+.beautycore-panel-heading h2 {
+    margin: 0;
+}
+
+.beautycore-admin-table {
+    border: 0;
+}
+
+.beautycore-table-wrap {
+    overflow-x: auto;
+}
+
+.beautycore-admin-table th {
+    white-space: nowrap;
+}
+
+.beautycore-admin-table td,
+.beautycore-admin-table th {
+    vertical-align: middle;
+}
+
+.beautycore-status {
+    background: #f0f0f1;
+    border-radius: 999px;
+    display: inline-block;
+    font-size: 11px;
+    padding: 4px 8px;
+    text-transform: capitalize;
+}
+
+.beautycore-status-pending {
+    background: #fff4ce;
+    color: #7a4b00;
+}
+
+.beautycore-status-confirmed,
+.beautycore-status-publish,
+.beautycore-status-approved {
+    background: #dff4e4;
+    color: #176b2c;
+}
+
+.beautycore-status-cancelled,
+.beautycore-status-canceled {
+    background: #fbe4e4;
+    color: #a02222;
+}
+
+.beautycore-empty-state {
+    align-items: flex-start;
+    background: #f6f7f7;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 18px;
+}
+
+.beautycore-empty-state span,
+.beautycore-panel > p,
+.beautycore-module-placeholder p {
+    color: #646970;
+}
+
+.beautycore-ranking,
+.beautycore-report-list,
+.beautycore-checklist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.beautycore-ranking li {
+    align-items: center;
+    border-bottom: 1px solid #f0f0f1;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+}
+
+.beautycore-ranking li:last-child {
+    border-bottom: 0;
+}
+
+.beautycore-checklist li {
+    align-items: flex-start;
+    display: flex;
+    gap: 8px;
+    margin: 10px 0;
+}
+
+.beautycore-checklist .dashicons-yes-alt {
+    color: #17833b;
+}
+
+.beautycore-checklist .dashicons-info-outline {
+    color: #996800;
+}
+
+.beautycore-checklist .dashicons-lock {
+    color: #2271b1;
+}
+
+.beautycore-definition-list {
+    display: grid;
+    grid-template-columns: minmax(120px, 0.35fr) 1fr;
+    margin: 0;
+}
+
+.beautycore-definition-list dt,
+.beautycore-definition-list dd {
+    border-bottom: 1px solid #f0f0f1;
+    margin: 0;
+    padding: 10px 0;
+}
+
+.beautycore-definition-list dt {
+    color: #646970;
+}
+
+.beautycore-definition-list dd {
+    font-weight: 600;
+}
+
+.beautycore-module-placeholder {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 220px;
+    text-align: center;
+}
+
+.beautycore-module-placeholder .dashicons {
+    color: #c9a56a;
+    font-size: 42px;
+    height: 42px;
+    margin-bottom: 12px;
+    width: 42px;
+}
+
+@media (max-width: 960px) {
+    .beautycore-stat-grid,
+    .beautycore-dashboard-grid,
+    .beautycore-settings-grid,
+    .beautycore-service-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .beautycore-stat-grid,
+    .beautycore-dashboard-grid,
+    .beautycore-settings-grid,
+    .beautycore-service-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.beautycore-service-toolbar {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 20px 0 12px;
+}
+.beautycore-service-filters {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 18px;
+}
+.beautycore-service-filters input[type="search"] {
+    min-width: 260px;
+}
+.beautycore-featured {
+    background: #fff4ce;
+    border-radius: 999px;
+    color: #7a4b00;
+    display: inline-block;
+    font-size: 11px;
+    margin-left: 4px;
+    padding: 3px 7px;
+}
+.beautycore-status-hidden {
+    background: #f0f0f1;
+    color: #646970;
+}
+.beautycore-status-discontinued {
+    background: #fbe4e4;
+    color: #a02222;
+}
+.beautycore-status-draft {
+    background: #e8f1fb;
+    color: #15558a;
+}
+.beautycore-service-table td:first-child {
+    min-width: 190px;
+}
+.beautycore-service-table del {
+    color: #646970;
+    font-size: 12px;
+    font-weight: 400;
+}
+.beautycore-category-panel {
+    margin-top: 20px;
+}
+.beautycore-category-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+.beautycore-category-form input {
+    flex: 1 1 180px;
+}
+.beautycore-category-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.beautycore-category-list li {
+    align-items: center;
+    border-top: 1px solid #f0f0f1;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 0;
+}
+.beautycore-category-list small {
+    color: #646970;
+    font-weight: 400;
+}
+.beautycore-service-form-layout {
+    align-items: start;
+    display: grid;
+    gap: 20px;
+    grid-template-columns: minmax(0, 1fr) 320px;
+}
+.beautycore-service-form-main {
+    min-width: 0;
+}
+.beautycore-form-tabs {
+    background: #fff;
+    border: 1px solid #e2e4e7;
+    border-radius: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 14px;
+    padding: 8px;
+}
+.beautycore-form-tabs a {
+    border-radius: 5px;
+    color: #50575e;
+    padding: 8px 10px;
+    text-decoration: none;
+}
+.beautycore-form-tabs a:hover,
+.beautycore-form-tabs a:focus {
+    background: #f0f0f1;
+    color: #1d2327;
+}
+.beautycore-form-tab {
+    margin-bottom: 16px;
+    scroll-margin-top: 40px;
+}
+.beautycore-form-field {
+    margin-bottom: 16px;
+}
+.beautycore-form-field label,
+.beautycore-form-field input,
+.beautycore-form-field textarea,
+.beautycore-form-field select {
+    display: block;
+    width: 100%;
+}
+.beautycore-form-field label strong {
+    display: block;
+    margin-bottom: 6px;
+}
+.beautycore-form-field textarea {
+    min-height: 110px;
+}
+.beautycore-form-field .description {
+    margin: 5px 0 0;
+}
+.beautycore-form-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.beautycore-checkbox-field {
+    margin: 0 0 16px;
+}
+.beautycore-checkbox-field label {
+    font-weight: 600;
+}
+.beautycore-assignment-grid {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.beautycore-assignment-grid h3 {
+    font-size: 14px;
+    margin: 0 0 8px;
+}
+.beautycore-check-option {
+    display: block;
+    margin: 8px 0;
+}
+.beautycore-image-picker {
+    align-items: center;
+    display: flex;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+.beautycore-image-picker button + button {
+    margin-left: 6px;
+}
+#beautycore-image-preview {
+    align-items: center;
+    background: #f6f7f7;
+    border: 1px dashed #c3c4c7;
+    color: #646970;
+    display: flex;
+    height: 96px;
+    justify-content: center;
+    overflow: hidden;
+    width: 128px;
+}
+#beautycore-image-preview img {
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+}
+.beautycore-form-actions {
+    display: flex;
+    gap: 8px;
+    margin: 0 0 16px;
+}
+@media (max-width: 960px) {
+    .beautycore-service-form-layout {
+        grid-template-columns: 1fr;
+    }
+}
+@media (max-width: 600px) {
+    .beautycore-service-toolbar,
+    .beautycore-form-grid,
+    .beautycore-assignment-grid {
+        align-items: stretch;
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+    .beautycore-service-filters input[type="search"] {
+        min-width: 0;
+        width: 100%;
+    }
+}

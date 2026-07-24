@@ -1,0 +1,45 @@
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_DATABASE: ${WORDPRESS_DB_NAME:-wordpress}
+      MYSQL_USER: ${WORDPRESS_DB_USER:-wordpress}
+      MYSQL_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wordpress}
+      MYSQL_RANDOM_ROOT_PASSWORD: "1"
+    volumes:
+      - beautycore_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u$${MYSQL_USER} -p$${MYSQL_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  wordpress:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: beautycore-wordpress:php8.2-apache
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${WORDPRESS_PORT:-8080}:80"
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:-wordpress}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wordpress}
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME:-wordpress}
+      WORDPRESS_DEBUG: ${WORDPRESS_DEBUG:-1}
+      BEAUTYCORE_GEMINI_API_KEY: ${BEAUTYCORE_GEMINI_API_KEY:-}
+      WORDPRESS_CONFIG_EXTRA: |
+        define('BEAUTYCORE_GEMINI_API_KEY', getenv('BEAUTYCORE_GEMINI_API_KEY') ?: '');
+    volumes:
+      - beautycore_wordpress:/var/www/html
+      - ./:/var/www/html/wp-content/themes/beautycore
+
+volumes:
+  beautycore_db:
+  beautycore_wordpress:

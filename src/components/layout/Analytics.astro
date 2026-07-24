@@ -1,8 +1,0 @@
-<script>
-  document.addEventListener("click", (event) => {
-    const link = event.target instanceof Element ? event.target.closest("[data-track]") : null;
-    const eventName = link?.dataset.track;
-    if (!eventName || !window.gtag) return;
-    window.gtag("event", eventName, { link_url: link.href });
-  });
-</script>

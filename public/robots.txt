@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://conamspa.io.vn/sitemap.xml
+Sitemap: https://beautycore.io.vn/sitemap.xml
