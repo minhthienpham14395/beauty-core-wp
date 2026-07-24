@@ -1,8 +1,6 @@
 node_modules/
 dist/
 .astro/
-.vercel/
-
 .env
 .env.*
 !.env.example
@@ -11,5 +9,4 @@ dist/
 Thumbs.db
 *.log
 
-.vercel
 .env*
